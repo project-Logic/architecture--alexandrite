@@ -1,0 +1,66 @@
+@startuml
+!define RECTANGLE class
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4P/C4_Container.puml
+
+' Существующие контейнеры
+Person(customer, "Customer", "Покупатель")
+Person(seller, "Seller", "Продавец")
+Person(apiuser, "API user", "Партнер через API")
+Person(operator, "Operator", "Оператор производства")
+
+Container(internetShop, "Internet Shop", "Vue, TypeScript, Threejs", "Пользователь может сделать заказ, загрузить 3D модель, работать в 3D редакторе")
+Container(shopAPI, "Shop API", "SpringBoot", "Обработка заказов, загрузка файлов")
+Container(shopDB, "Shop DB", "PostgreSQL", "Данные о клиентах и заказах")
+Container(crm, "CRM", "Vue, TypeScript", "Работа с клиентами")
+Container(crmAPI, "CRM API", "SpringBoot", "API для CRM")
+Container(mes, "MES", "React, TypeScript", "Интерфейс для операторов")
+Container(mesAPI, "MES API", "C#", "Назначение заказов, расчет стоимости")
+Container(mesDB, "MES db", "PostgreSQL", "Данные о заказах и операторах")
+Container(s3, "3d files storage", "S3-based storage", "Хранение 3D файлов")
+Container(rabbit, "Messages Queue", "RabbitMQ", "Очереди сообщений")
+
+' Новые компоненты для трейсинга (выделены красным)
+Container_Ext(otel, "<b><color:red>OpenTelemetry Collector</color></b>", "Tracing", "<color:red>Сбор и агрегация трасс</color>")
+Container_Ext(jaeger, "<b><color:red>Jaeger</color></b>", "Tracing UI", "<color:red>Визуализация трасс</color>")
+
+' Новые компоненты для логирования (выделены красным)
+Container_Ext(logCollector, "<b><color:red>Log Collector</color></b>", "Logstash/Fluentd", "<color:red>Сбор логов</color>")
+Container_Ext(logStorage, "<b><color:red>Log Storage</color></b>", "Elasticsearch", "<color:red>Хранение логов</color>")
+Container_Ext(logAnalysis, "<b><color:red>Log Analysis</color></b>", "Kibana", "<color:red>Аналитика и визуализация логов</color>")
+
+' Взаимодействия
+Rel(customer, internetShop, "Использует")
+Rel(seller, crm, "Использует")
+Rel(apiuser, mesAPI, "Взаимодействует через API")
+Rel(operator, mes, "Работает с заказами")
+
+Rel(internetShop, shopAPI, "Вызовы API")
+Rel(shopAPI, shopDB, "Чтение/запись")
+Rel(shopAPI, crmAPI, "Вызовы API")
+Rel(crm, crmAPI, "Вызовы API")
+Rel(crmAPI, shopDB, "Чтение/запись")
+Rel(crmAPI, rabbit, "Публикация событий")
+Rel(shopAPI, s3, "Загрузка файлов")
+Rel(mes, mesAPI, "Вызовы API")
+Rel(mesAPI, mesDB, "Чтение/запись")
+Rel(mesAPI, rabbit, "Публикация/чтение событий")
+Rel(mesAPI, s3, "Чтение 3D файлов")
+
+' Трейсинг: интеграция с OpenTelemetry Collector
+Rel(internetShop, otel, "Трейсы", "OpenTelemetry", "#red")
+Rel(shopAPI, otel, "Трейсы", "OpenTelemetry", "#red")
+Rel(crmAPI, otel, "Трейсы", "OpenTelemetry", "#red")
+Rel(mesAPI, otel, "Трейсы", "OpenTelemetry", "#red")
+Rel(otel, jaeger, "Передача трасс", "Jaeger protocol", "#red")
+
+' Логирование: интеграция с Log Collector
+Rel(shopAPI, logCollector, "Логи (INFO, ERROR, WARN, DEBUG)", "Log", "#red")
+Rel(mesAPI, logCollector, "Логи (INFO, ERROR, WARN, DEBUG)", "Log", "#red")
+Rel(crmAPI, logCollector, "Логи (INFO, ERROR, WARN, DEBUG)", "Log", "#red")
+Rel(rabbit, logCollector, "Логи событий", "Log", "#red")
+
+Rel(logCollector, logStorage, "Передача логов", "Log", "#red")
+Rel(logStorage, logAnalysis, "Визуализация и анализ", "Kibana", "#red")
+
+@enduml
