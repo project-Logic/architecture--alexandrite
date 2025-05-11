@@ -1,0 +1,26 @@
+@startuml
+actor User
+participant "MES API" as MES
+participant "Cache" as Cache
+participant "MES DB" as DB
+
+== Чтение списка заказов ==
+User -> MES: Запрос списка заказов
+MES -> Cache: Проверка кеша
+alt Кеш найден
+    Cache -> MES: Список заказов
+    MES -> User: Список заказов
+else Кеш не найден
+    MES -> DB: Запрос списка заказов
+    DB --> MES: Список заказов
+    MES -> Cache: Сохранить в кеш
+    MES -> User: Список заказов
+end
+
+== Изменение статуса заказа ==
+User -> MES: Изменить статус заказа
+MES -> DB: Обновить статус
+DB --> MES: OK
+MES -> Cache: Инвалидация по ключу
+MES -> User: OK
+@enduml
